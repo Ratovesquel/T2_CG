@@ -13,31 +13,34 @@ class Objeto3D:
         pass
 
     def LoadFile(self, file: str):
-            with open(file, "r") as f:
-                for line in f:
-                    line = line.strip()  # remove espaços e quebras de linha
-                    if not line or line.startswith('#'):
-                        continue  # ignora comentários e linhas vazias
+        with open(file, "r") as f:
+            for line in f:
+                line = line.strip()  # remove espaços e quebras de linha
+                if not line or line.startswith('#'):
+                    continue  # ignora comentários e linhas vazias
 
-                    parts = line.split()
-                    if parts[0] == 'v':  # vértice
-                        try:
-                            x, y, z = map(float, parts[1:4])
-                            self.vertices.append(Ponto(x, y, z))
-                        except ValueError:
+                parts = line.split()
+                if parts[0] == 'v':  # vértice
+                    try:
+                        x, y, z = map(float, parts[1:4])
+                        self.vertices.append(Ponto(x, y, z))
+                    except ValueError:
+                        continue
+
+                elif parts[0] == 'f':  # face
+                    face = []
+                    for p in parts[1:]:
+                        if p == '':
                             continue
-
-                    elif parts[0] == 'f':  # face
-                        face = []
-                        for p in parts[1:]:
-                            if p == '':
-                                continue
-                            # pega só o índice do vértice antes da primeira barra
-                            v_idx = p.split('/')[0]
-                            if v_idx:
-                                face.append(int(v_idx) - 1)
-                        if len(face) >= 3:  # ignora faces degeneradas
-                            self.faces.append(face)
+                        # pega só o índice do vértice antes da primeira barra
+                        v_idx = p.split('/')[0]
+                        if v_idx:
+                            face.append(int(v_idx) - 1)
+                    if len(face) >= 3:  # ignora faces degeneradas
+                        self.faces.append(face)
+        print(f"Carregado {file}: {len(self.vertices)} vértices, {len(self.faces)} faces")
+                        
+                        
 
 
     def DesenhaVertices(self):

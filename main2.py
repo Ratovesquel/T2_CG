@@ -32,11 +32,19 @@ window_ids = {}
 def ajusta_camera():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45, 1, 0.1, 50000.0)
+    gluPerspective(45, 1, 0.1, 5000.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0, 0, 500, 0, 0, 0, 0, 1, 0)
-    glScalef(0.1, 0.1, 0.1)
+    gluLookAt(0, 900, 50, 0, 0, 0, 0, 1, 0)
+    
+    
+    #CAMERA -----------------------------------------------------------
+    #Especifica a matriz de transformação da visualização
+    # As três primeiras variáveis especificam a posição do observador nos eixos x, y e z
+    # As três próximas especificam o ponto de foco nos eixos x, y e z
+    # As três últimas especificam o vetor up
+    # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
+
 
 
 def setup_luz_camera():
@@ -52,39 +60,60 @@ def setup_luz_camera():
     light_position = [1.0, 1.0, 1.0, 0.0]
     glLightfv(GL_LIGHT0, GL_POSITION, light_position)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+    
+    
+def init_lighting():
+    glEnable(GL_LIGHTING)          # ativa o sistema de luz
+    glEnable(GL_LIGHT0)            # ativa a luz 0 (default)
+    glEnable(GL_COLOR_MATERIAL)    # permite que glColor() afete o material
+    glShadeModel(GL_SMOOTH)        # suaviza a iluminação entre vértices
+
+    # luz ambiente global (ilumina tudo levemente)
+    ambient_light = [0.3, 0.3, 0.3, 1.0]
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient_light)
+
+    # parâmetros da luz 0
+    light_position = [10.0, 10.0, 10.0, 1.0]
+    diffuse_light = [0.8, 0.8, 0.8, 1.0]
+    specular_light = [1.0, 1.0, 1.0, 1.0]
+
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light)
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
+
 
 
 # ==========================
 #  FUNÇÕES DE DESENHO
 # ==========================
-
+   
 def desenha_obj1():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glTranslatef(0, 0, -5)
-    glRotatef(0, 1, 1, 0)
-    # desenha aqui o objeto 1
+    gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
+
     obj1.Desenha()
     glutSwapBuffers()
 
 def desenha_obj2():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glTranslatef(0, 0, -5)
-    glRotatef(0, 1, 1, 0)
-    # desenha aqui o objeto 2
+    gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
+
     obj2.Desenha()
     glutSwapBuffers()
 
 def desenha_morph():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glTranslatef(0, 0, -5)
-    glRotatef(0, 1, 0, 0)
-    glRotatef(0, 0, 1, 0)
-    glColor3f(1, 1, 0)
+    gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
+
     obj1.Desenha()
     glutSwapBuffers()
+    
     
 # --------------------------------------------------------
 # ATUALIZAÇÃO DO MORPHING
@@ -136,13 +165,16 @@ def init_objs():
     global obj1, obj2, morph_vertices, morph_faces
     obj1 = Objeto3D()
     obj2 = Objeto3D()
-    obj1.LoadFile("Objetos/Cachorro1.obj")
+    obj1.LoadFile("Objetos/bursto1.obj")
     obj2.LoadFile("Objetos/Banana1.obj")
-
+    
     # Alinha número de vértices
     min_v = min(len(obj1.vertices), len(obj2.vertices))
-    obj1.vertices = obj1.vertices[:min_v]
-    obj2.vertices = obj2.vertices[:min_v]
+    morph_vertices = [
+    np.array(obj1.vertices[i]) if i < len(obj1.vertices) else np.zeros(3)
+    for i in range(min_v)
+    ]
+
 
     # 🔧 Corrige as faces inválidas
     filter_faces(obj1)

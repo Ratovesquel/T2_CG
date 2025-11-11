@@ -111,8 +111,39 @@ def desenha_morph():
     glLoadIdentity()
     gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
 
-    obj1.Desenha()
+    # cor base (vai interagir com a luz)
+    glColor3f(1.0, 1.0, 0.8)
+
+    # debug
+    print("morph_vertices:", len(morph_vertices))
+    print("morph_faces:", len(morph_faces))
+    if morph_faces:
+        print("Exemplo de face:", morph_faces[0])
+
+    if not morph_vertices or not morph_faces:
+        glutSwapBuffers()
+        return
+
+    glBegin(GL_TRIANGLES)
+    for face in morph_faces:
+        # triangula polígono convex/concave com fan (pode não ser perfeito, mas funcional)
+        if len(face) < 3:
+            continue
+        # primeiro vértice da face
+        i0 = face[0]
+        # gera triângulos (i0, i1, i2), (i0, i2, i3), ...
+        for i in range(1, len(face)-1):
+            tri = (i0, face[i], face[i+1])
+            for idx in tri:
+                if 0 <= idx < len(morph_vertices):
+                    v = morph_vertices[idx]
+                    # garantir float32 contíguo
+                    arr = np.asarray(v, dtype=np.float32)
+                    glVertex3fv(arr)
+    glEnd()
+
     glutSwapBuffers()
+
     
     
 # --------------------------------------------------------
@@ -157,6 +188,9 @@ def teclado_morph(key, x, y):
     if key == b' ':
         morph_active = True
         morph_direction *= -1
+        print("SPACE pressed -> morph_active:", morph_active, "direction:", morph_direction)
+        glutPostRedisplay()
+
 
 # --------------------------------------------------------
 # FUNÇÃO DE INICIALIZAÇÃO
@@ -168,20 +202,40 @@ def init_objs():
     obj1.LoadFile("Objetos/bursto1.obj")
     obj2.LoadFile("Objetos/Banana1.obj")
     
-    # Alinha número de vértices
+    # converter vértices para numpy arrays (float32)
+    def to_array_list(vertices):
+        new_vertices = []
+        for v in vertices:
+            if hasattr(v, 'x'):
+                arr = np.array([v.x, v.y, v.z], dtype=np.float32)
+            else:
+                arr = np.array(v, dtype=np.float32)
+            new_vertices.append(arr)
+        return new_vertices
+
+    obj1.vertices = to_array_list(obj1.vertices)
+    obj2.vertices = to_array_list(obj2.vertices)
+
+    # Alinha número de vértices — corta para o menor
     min_v = min(len(obj1.vertices), len(obj2.vertices))
-    morph_vertices = [
-    np.array(obj1.vertices[i]) if i < len(obj1.vertices) else np.zeros(3)
-    for i in range(min_v)
-    ]
+    obj1.vertices = obj1.vertices[:min_v]
+    obj2.vertices = obj2.vertices[:min_v]
 
-
-    # 🔧 Corrige as faces inválidas
+    # Corrige faces inválidas (baseado no novo tamanho de vertices)
     filter_faces(obj1)
     filter_faces(obj2)
 
-    morph_vertices = [np.array(v) for v in obj1.vertices]
+    # Cria listas de morph (copiadas, float32)
+    morph_vertices = (1 - t) * obj1.vertices + t * obj2.vertices
+
+    morph_vertices = [np.array([v.x, v.y, v.z], dtype=np.float32) if hasattr(v, 'x') else np.array(v, dtype=np.float32) for v in morph_vertices]
+
     morph_faces = obj1.faces[:min(len(obj1.faces), len(obj2.faces))]
+
+    # debug rápido
+    print(f"Init: obj1.vertices={len(obj1.vertices)}, obj1.faces={len(obj1.faces)}")
+    print(f"Init: obj2.vertices={len(obj2.vertices)}, obj2.faces={len(obj2.faces)}")
+
 
     
     
@@ -208,6 +262,8 @@ def main():
     glutInitWindowPosition(100, 50)
     window_ids['obj1'] = glutCreateWindow(b"Objeto 1")
     ajusta_camera()
+    init_lighting()
+    glEnable(GL_NORMALIZE)
     setup_luz_camera()
     glutDisplayFunc(desenha_obj1)
 
@@ -216,6 +272,8 @@ def main():
     glutInitWindowPosition(800, 50)
     window_ids['obj2'] = glutCreateWindow(b"Objeto 2")
     ajusta_camera()
+    init_lighting()
+    glEnable(GL_NORMALIZE)
     setup_luz_camera()
     glutDisplayFunc(desenha_obj2)
 
@@ -224,6 +282,8 @@ def main():
     glutInitWindowPosition(450, 250)
     window_ids['morph'] = glutCreateWindow(b"Morphing")
     ajusta_camera()
+    init_lighting()
+    glEnable(GL_NORMALIZE)
     setup_luz_camera()
     glutDisplayFunc(desenha_morph)
     glutKeyboardFunc(teclado_morph)

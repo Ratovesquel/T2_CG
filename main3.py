@@ -4,8 +4,6 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from Objeto3D import Objeto3D
-
-
 # Banana1:   f 320
 # Bursto1:   f 2500
 # Cachorro1: f 3400
@@ -25,55 +23,96 @@ morph_active = False
 
 window_ids = {}
 
-# --------------------------------------------------------
-# FUNÇÕES DE ILUMINAÇÃO E CÂMERA
-# --------------------------------------------------------
-def setup_luz_camera():
-    glClearColor(0.5, 0.5, 0.9, 1.0)
-    glEnable(GL_DEPTH_TEST)
-    glEnable(GL_LIGHTING)
-    glEnable(GL_LIGHT0)
+# ==========================
+#  AJUSTES DE CÂMERA E LUZ
+# ==========================
 
+def ajusta_camera():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(60, 16/9, 0.1, 50)
+    gluPerspective(45, 1, 0.1, 5000.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0, 3, 8, 0, 1, 0, 0, 1, 0)
+    gluLookAt(0, 900, 50, 0, 0, 0, 0, 1, 0)
+    
+    
+    #CAMERA -----------------------------------------------------------
+    #Especifica a matriz de transformação da visualização
+    # As três primeiras variáveis especificam a posição do observador nos eixos x, y e z
+    # As três próximas especificam o ponto de foco nos eixos x, y e z
+    # As três últimas especificam o vetor up
+    # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
 
-# --------------------------------------------------------
-# DESENHO DAS TRÊS JANELAS
-# --------------------------------------------------------
+
+
+def setup_luz_camera():
+    glEnable(GL_DEPTH_TEST)
+    glShadeModel(GL_SMOOTH)
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+    glEnable(GL_COLOR_MATERIAL)
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+    glClearColor(0.4, 0.4, 0.8, 1.0)
+
+    # Luz suave
+    light_position = [1.0, 1.0, 1.0, 0.0]
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+    
+    
+def init_lighting():
+    glEnable(GL_LIGHTING)          # ativa o sistema de luz
+    glEnable(GL_LIGHT0)            # ativa a luz 0 (default)
+    glEnable(GL_COLOR_MATERIAL)    # permite que glColor() afete o material
+    glShadeModel(GL_SMOOTH)        # suaviza a iluminação entre vértices
+
+    # luz ambiente global (ilumina tudo levemente)
+    ambient_light = [0.3, 0.3, 0.3, 1.0]
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient_light)
+
+    # parâmetros da luz 0
+    light_position = [10.0, 10.0, 10.0, 1.0]
+    diffuse_light = [0.8, 0.8, 0.8, 1.0]
+    specular_light = [1.0, 1.0, 1.0, 1.0]
+
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light)
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
+
+
+
+# ==========================
+#  FUNÇÕES DE DESENHO
+# ==========================
+   
 def desenha_obj1():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0, 3, 8, 0, 1, 0, 0, 1, 0)
+    gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
+
     obj1.Desenha()
     glutSwapBuffers()
-    
 
 def desenha_obj2():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0, 3, 8, 0, 1, 0, 0, 1, 0)
+    gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
+
     obj2.Desenha()
     glutSwapBuffers()
 
 def desenha_morph():
-    global morph_vertices, morph_faces
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0, 3, 8, 0, 1, 0, 0, 1, 0)
+    gluLookAt(15, 0, 10, 0, 0, 0, 0, 1, 0)
 
-    glColor3f(1, 0.5, 0)
-    glBegin(GL_TRIANGLES)
-    for f in morph_faces:
-        for vi in f:
-            glVertex3fv([morph_vertices[vi].x, morph_vertices[vi].y, morph_vertices[vi].z])
-
-    glEnd()
+    obj1.Desenha()
     glutSwapBuffers()
-
+    
+    
 # --------------------------------------------------------
 # ATUALIZAÇÃO DO MORPHING
 # --------------------------------------------------------
@@ -111,11 +150,22 @@ def recompute_morph_vertices(t):
 # --------------------------------------------------------
 # TECLADO (JANELA DE MORPH)
 # --------------------------------------------------------
-def teclado_morph(key, x, y):
-    global morph_active, morph_direction
-    if key == b' ':
-        morph_active = True
-        morph_direction *= -1
+#def teclado_morph(key, x, y):
+#    global morph_active, morph_direction
+#    if key == b' ':
+#        morph_active = True
+#        morph_direction *= -1
+def teclado(key, x, y):
+    obj1.rotation = (1, 1, 0, obj1.rotation[3] + 2)    
+    glutPostRedisplay()
+    pass
+# def teclado(key, x, y):
+#     global morph_active, morph_direction
+#     if key == b' ':
+#         morph_active = True
+#         morph_direction *= -1
+#         print("SPACE pressed -> morph_active:", morph_active, "direction:", morph_direction)
+#         glutPostRedisplay()
 
 # --------------------------------------------------------
 # FUNÇÃO DE INICIALIZAÇÃO
@@ -124,13 +174,16 @@ def init_objs():
     global obj1, obj2, morph_vertices, morph_faces
     obj1 = Objeto3D()
     obj2 = Objeto3D()
-    obj1.LoadFile("Objetos/Bursto1.obj")
+    obj1.LoadFile("Objetos/bursto1.obj")
     obj2.LoadFile("Objetos/Banana1.obj")
-
+    
     # Alinha número de vértices
     min_v = min(len(obj1.vertices), len(obj2.vertices))
-    obj1.vertices = obj1.vertices[:min_v]
-    obj2.vertices = obj2.vertices[:min_v]
+    morph_vertices = [
+    np.array(obj1.vertices[i]) if i < len(obj1.vertices) else np.zeros(3)
+    for i in range(min_v)
+    ]
+
 
     # 🔧 Corrige as faces inválidas
     filter_faces(obj1)
@@ -163,6 +216,7 @@ def main():
     glutInitWindowSize(400, 400)
     glutInitWindowPosition(100, 50)
     window_ids['obj1'] = glutCreateWindow(b"Objeto 1")
+    ajusta_camera()
     setup_luz_camera()
     glutDisplayFunc(desenha_obj1)
 
@@ -170,20 +224,26 @@ def main():
     glutInitWindowSize(400, 400)
     glutInitWindowPosition(800, 50)
     window_ids['obj2'] = glutCreateWindow(b"Objeto 2")
+    ajusta_camera()
     setup_luz_camera()
     glutDisplayFunc(desenha_obj2)
 
     # Janela 3 (morph)
     glutInitWindowSize(400, 400)
-    glutInitWindowPosition(450, 550)
+    glutInitWindowPosition(450, 250)
     window_ids['morph'] = glutCreateWindow(b"Morphing")
+    ajusta_camera()
     setup_luz_camera()
     glutDisplayFunc(desenha_morph)
-    glutKeyboardFunc(teclado_morph)
+    glutKeyboardFunc(teclado)
     glutIdleFunc(update_morph)
 
     init_objs()
+    print("OBJ1 -> vértices: ", len(obj1.vertices), "faces: ", len(obj1.faces))
+    print("OBJ2 -> vértices: ", len(obj2.vertices), "faces: ", len(obj2.faces))
+    print("Morph_vertices: ",len(morph_vertices), "Morph_faces: ",len(morph_faces))
     glutMainLoop()
+    
 
 if __name__ == "__main__":
     main()
